@@ -1,0 +1,15 @@
+C:\Projects\AS2POC\Src\AS2\AS2\bin\Debug\net6.0\AS2.exe
+C:\Projects\AS2POC\Src\AS2\AS2\bin\Debug\net6.0\AS2.deps.json
+C:\Projects\AS2POC\Src\AS2\AS2\bin\Debug\net6.0\AS2.runtimeconfig.json
+C:\Projects\AS2POC\Src\AS2\AS2\bin\Debug\net6.0\AS2.dll
+C:\Projects\AS2POC\Src\AS2\AS2\bin\Debug\net6.0\AS2.pdb
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.csproj.AssemblyReference.cache
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.AssemblyInfoInputs.cache
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.AssemblyInfo.cs
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.csproj.CoreCompileInputs.cache
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.dll
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\refint\AS2.dll
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.pdb
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\AS2.genruntimeconfig.cache
+C:\Projects\AS2POC\Src\AS2\AS2\obj\Debug\net6.0\ref\AS2.dll
