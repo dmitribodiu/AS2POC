@@ -24,6 +24,8 @@ namespace AS2
             //FullFlow();
 
 
+
+            //var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\b2buatcrtsha256.cer");
             //var data = AS2HelperV2.Package("Test text 123", publicNiagaraCert, privateAlvysTenantKey);
         }
 
@@ -64,8 +66,6 @@ namespace AS2
 
         static void FullFlow()
         {
-            //var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\b2buatcrtsha256.cer");
-
             // Alvys part
             var message = "Test text 123";
 
@@ -75,6 +75,11 @@ namespace AS2
             var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
             var encrypted = AS2HelperV2.Encrypt(signed, publicNiagaraCert);
 
+            Console.WriteLine("Original message: " + message);
+            Console.WriteLine();
+            Console.WriteLine("encrypted message: " + Encoding.UTF8.GetString(encrypted));
+            Console.WriteLine();
+
             // Niagara part
             var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
             var decrypted = AS2HelperV2.Decrypt(encrypted, privateNiagaraKey.Private);
@@ -82,6 +87,12 @@ namespace AS2
             var alvysPublicCert = new X509Certificate2($"{CertificateFolderPath}\\AH100-Alvys.cer");
             var alvysPublicKey = new X509CertificateParser().ReadCertificate(alvysPublicCert.GetRawCertData()).GetPublicKey();
             var verifySigned = AS2HelperV2.VerifySignature(Encoding.UTF8.GetBytes(message), alvysPublicKey);
+
+            Console.WriteLine("decrypted message: " + Encoding.UTF8.GetString(decrypted));
+            Console.WriteLine();
+            Console.WriteLine("is verified message: " + verifySigned);
+            Console.WriteLine();
+            Console.WriteLine("final message: " + verifySigned);
         }
 
         static X509Certificate2 GenerateCertificate()
