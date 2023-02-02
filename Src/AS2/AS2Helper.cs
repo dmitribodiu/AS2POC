@@ -98,21 +98,17 @@ namespace AS2
         /// <returns></returns>
         public static byte[] Package(string message, X509Certificate2 recipientCert, AsymmetricCipherKeyPair senderPrivateKey)
         {
-            // Sign the encrypted message
-            byte[] signedMessage = Sign(Encoding.UTF8.GetBytes(message), senderPrivateKey);
-
-
             // Encrypt the message
-            byte[] encryptedMessage = Encrypt(signedMessage, recipientCert);
-            //byte[] encryptedMessage = Encoding.UTF8.GetBytes(message);
+            byte[] encryptedMessage = Encrypt(Encoding.UTF8.GetBytes(message), recipientCert);
 
-            
+            // Sign the encrypted message
+            byte[] signedMessage = Sign(encryptedMessage, senderPrivateKey);
 
             // Verify the signature
-            //var publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCert.PublicKey.EncodedKeyValue.RawData);
-            var publicKey = new X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData());
-            AsymmetricKeyParameter pubKey = publicKey.GetPublicKey();
-            bool isValidSignature = VerifySignature(encryptedMessage, pubKey);
+            var publicKey = new X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData()).GetPublicKey();
+            bool isValidSignature = VerifySignature(encryptedMessage, publicKey);
+
+            //var decrypted = Decrypt(encryptedMessage, );
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
@@ -122,68 +118,34 @@ namespace AS2
             Console.WriteLine();
             Console.WriteLine("Signature validity: " + isValidSignature);
 
-            return encryptedMessage;
+            return signedMessage;
         }
 
-        static byte[] Encrypt(byte[] data, X509Certificate2 recipientCertificate)
+        public static byte[] Encrypt(byte[] data, X509Certificate2 recipientCertificate)
         {
-            //RsaKeyParameters publicKey = LoadPublicKey(recipientPublicKeyPath);
-            //IBufferedCipher cipher = new Pkcs1Encoding(new RsaEngine());
-            //X509Certificate2 recipientCertificate = LoadCertificate(recipientCertificatePath);
-
-            //var rsa = recipientCertificate.PublicKey.GetRSAPublicKey();
-            //var x = rsa.ExportParameters(false);
-
-
-            //SubjectPublicKeyInfo subInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(rsa);
-            //AsymmetricKeyParameter testpublicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(subInfo);
-
             var certificate = new X509CertificateParser().ReadCertificate(recipientCertificate.GetRawCertData());
-            AsymmetricKeyParameter pubKey = certificate.GetPublicKey();
+            var pubKey = certificate.GetPublicKey();
 
-
-            ///
-            //var key = recipientCertificate.GetPublicKey();
-            //var publicKey2 = PublicKeyFactory.CreateKey(key);
-            //RsaKeyParameters publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCertificate.PublicKey.EncodedKeyValue.RawData);
-
-
-
-            //var rsa = recipientCertificate.GetRSAPublicKey();
-            //var rsaParams = rsa.ExportParameters(false);
-            //var publicKey = new RsaKeyParameters(false, new BigInteger(rsaParams.Modulus), new BigInteger(rsaParams.Exponent));
-
-            //RsaKeyParameters key = (RsaKeyParameters)recipientCertificate.GetPublicKey();
-            //// Construct a microsoft RSA crypto service provider using the public key in the certificate
-            //RSAParameters param = new RSAParameters();
-            //param.Exponent = key.Exponent.ToByteArrayUnsigned();
-            //param.Modulus = key.Modulus.ToByteArrayUnsigned();
-
-            //IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
-
-            /////////////IBufferedCipher cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
-            //////////cipher.Init(true, pubKey);
-            //////////return cipher.DoFinal(data);
+            var cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
+            cipher.Init(true, pubKey);
+            return cipher.DoFinal(data);
 
             //IAsymmetricBlockCipher cipher = new OaepEncoding(new RsaEngine());
             //cipher.Init(true, pubKey);
             //return cipher.ProcessBlock(data, 0, data.Length);
 
-            IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
-            cipher.Init(true, pubKey);
-
-            int blockSize = cipher.GetInputBlockSize();
-            int outputSize = cipher.GetOutputBlockSize();
-
-            List<byte> encryptedData = new List<byte>();
-            for (int i = 0; i < data.Length; i += blockSize)
-            {
-                int length = Math.Min(blockSize, data.Length - i);
-                byte[] encryptedBlock = cipher.ProcessBlock(data, i, length);
-                encryptedData.AddRange(encryptedBlock);
-            }
-
-            return encryptedData.ToArray();
+            //IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
+            //cipher.Init(true, pubKey);
+            //int blockSize = cipher.GetInputBlockSize();
+            //int outputSize = cipher.GetOutputBlockSize();
+            //List<byte> encryptedData = new List<byte>();
+            //for (int i = 0; i < data.Length; i += blockSize)
+            //{
+            //    int length = Math.Min(blockSize, data.Length - i);
+            //    byte[] encryptedBlock = cipher.ProcessBlock(data, i, length);
+            //    encryptedData.AddRange(encryptedBlock);
+            //}
+            //return encryptedData.ToArray();
         }
 
         private static AsymmetricKeyParameter ToAsymmetricKeyParameter(X509Certificate2 certificate)
@@ -191,7 +153,7 @@ namespace AS2
             return PublicKeyFactory.CreateKey(certificate.GetPublicKey());
         }
 
-        static byte[] Sign(byte[] data, AsymmetricCipherKeyPair keyPair)
+        public static byte[] Sign(byte[] data, AsymmetricCipherKeyPair keyPair)
         {
             //X509Certificate2 senderCertificate = LoadCertificate(senderCertificatePath, senderCertificatePassword);
             //AsymmetricCipherKeyPair keyPair = LoadPrivateKey(senderPrivateKeyPath);
@@ -202,7 +164,7 @@ namespace AS2
             return signer.GenerateSignature();
         }
 
-        static bool VerifySignature(byte[] signedData, AsymmetricKeyParameter recipientPublicKey)
+        public static bool VerifySignature(byte[] signedData, AsymmetricKeyParameter recipientPublicKey)
         {
             //X509Certificate2 recipientCertificate = LoadCertificate(recipientCertificatePath);
             //AsymmetricKeyParameter publicKey = LoadPublicKey(recipientPublicKey);
@@ -236,13 +198,37 @@ namespace AS2
             //return signer.VerifySignature(decodeBytes);
         }
 
-        //static X509Certificate2 LoadCertificate(string certificatePath, string password = null)
-        //{
-        //    return string.IsNullOrEmpty(password)
-        //        ? new X509Certificate2(certificatePath)
-        //        : new X509Certificate2(certificatePath, password);
-        //}
+        public static byte[] Decrypt(byte[] encryptedMessage, AsymmetricKeyParameter privateKey)
+        {
+            var cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
+            cipher.Init(false, privateKey);
+            return cipher.DoFinal(encryptedMessage);
 
+            //// Create the decrypter
+            //CmsEnvelopedDataParser decrypter = new CmsEnvelopedDataParser(encryptedMessage);
+            //RecipientInformationStore recipients = decrypter.GetRecipientInfos();
+            //RecipientInformation recipient = recipients.GetFirstRecipient();
+            //byte[] decryptedContent = recipient.GetContent(privateKey);
+
+            //return decryptedContent;
+        }
+
+        //static byte[] VerifySignature(byte[] decryptedContent)
+        //{
+
+        //    // Verify the signature
+        //    CmsSignedDataParser signedData = new CmsSignedDataParser(decryptedContent);
+        //    SignerInformationStore signers = signedData.GetSignerInfos();
+        //    SignerInformation signer = signers.GetFirstSigner();
+        //    if (signer.Verify(signedData.GetSigningCertificate().GetPublicKey()))
+        //    {
+        //        // Signature is valid
+        //    }
+        //    else
+        //    {
+        //        // Signature is invalid
+        //    }
+        //}
     }
 
     public static class AS2HelperV3
