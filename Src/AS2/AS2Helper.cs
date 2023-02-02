@@ -10,6 +10,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -104,12 +105,17 @@ namespace AS2
             byte[] signedMessage = Sign(encryptedMessage, senderPrivateKey);
 
             // Verify the signature
-            var publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCert.PublicKey.EncodedKeyValue.RawData);
-            bool isValidSignature = VerifySignature(signedMessage, publicKey);
+            //var publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCert.PublicKey.EncodedKeyValue.RawData);
+            var publicKey = new Org.BouncyCastle.X509.X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData());
+            AsymmetricKeyParameter pubKey = publicKey.GetPublicKey();
+            bool isValidSignature = VerifySignature(signedMessage, pubKey);
 
             Console.WriteLine("Original message: " + message);
+            Console.WriteLine();
             Console.WriteLine("Encrypted message: " + Encoding.UTF8.GetString(encryptedMessage));
+            Console.WriteLine();
             Console.WriteLine("Signed message: " + Encoding.UTF8.GetString(signedMessage));
+            Console.WriteLine();
             Console.WriteLine("Signature validity: " + isValidSignature);
 
             return signedMessage;
@@ -121,9 +127,23 @@ namespace AS2
             //IBufferedCipher cipher = new Pkcs1Encoding(new RsaEngine());
             //X509Certificate2 recipientCertificate = LoadCertificate(recipientCertificatePath);
 
-            var key = recipientCertificate.GetPublicKey();
-            var publicKey2 = PublicKeyFactory.CreateKey(key);
-            RsaKeyParameters publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCertificate.PublicKey.EncodedKeyValue.RawData);
+            //var rsa = recipientCertificate.PublicKey.GetRSAPublicKey();
+            //var x = rsa.ExportParameters(false);
+
+
+            //SubjectPublicKeyInfo subInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(rsa);
+            //AsymmetricKeyParameter testpublicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(subInfo);
+
+            var privateCertBouncy = new X509CertificateParser().ReadCertificate(recipientCertificate.GetRawCertData());
+            AsymmetricKeyParameter pubKey = privateCertBouncy.GetPublicKey();
+
+
+            ///
+            //var key = recipientCertificate.GetPublicKey();
+            //var publicKey2 = PublicKeyFactory.CreateKey(key);
+            //RsaKeyParameters publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCertificate.PublicKey.EncodedKeyValue.RawData);
+
+
 
             //var rsa = recipientCertificate.GetRSAPublicKey();
             //var rsaParams = rsa.ExportParameters(false);
@@ -138,7 +158,7 @@ namespace AS2
             IBufferedCipher cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
             //IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
 
-            cipher.Init(true, publicKey);
+            cipher.Init(true, pubKey);
             return cipher.DoFinal(data);
         }
 
@@ -158,7 +178,7 @@ namespace AS2
             return signer.GenerateSignature();
         }
 
-        static bool VerifySignature(byte[] signedData, RsaKeyParameters recipientPublicKey)
+        static bool VerifySignature(byte[] signedData, AsymmetricKeyParameter recipientPublicKey)
         {
             //X509Certificate2 recipientCertificate = LoadCertificate(recipientCertificatePath);
             //AsymmetricKeyParameter publicKey = LoadPublicKey(recipientPublicKey);
