@@ -1,6 +1,7 @@
 ﻿using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Cms;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
@@ -97,28 +98,31 @@ namespace AS2
         /// <returns></returns>
         public static byte[] Package(string message, X509Certificate2 recipientCert, AsymmetricCipherKeyPair senderPrivateKey)
         {
+            // Sign the encrypted message
+            byte[] signedMessage = Sign(Encoding.UTF8.GetBytes(message), senderPrivateKey);
+
+
             // Encrypt the message
-            byte[] encryptedMessage = Encrypt(Encoding.UTF8.GetBytes(message), recipientCert);
+            byte[] encryptedMessage = Encrypt(signedMessage, recipientCert);
             //byte[] encryptedMessage = Encoding.UTF8.GetBytes(message);
 
-            // Sign the encrypted message
-            byte[] signedMessage = Sign(encryptedMessage, senderPrivateKey);
+            
 
             // Verify the signature
             //var publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(recipientCert.PublicKey.EncodedKeyValue.RawData);
-            var publicKey = new Org.BouncyCastle.X509.X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData());
+            var publicKey = new X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData());
             AsymmetricKeyParameter pubKey = publicKey.GetPublicKey();
-            bool isValidSignature = VerifySignature(signedMessage, pubKey);
+            bool isValidSignature = VerifySignature(encryptedMessage, pubKey);
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
-            Console.WriteLine("Encrypted message: " + Encoding.UTF8.GetString(encryptedMessage));
-            Console.WriteLine();
             Console.WriteLine("Signed message: " + Encoding.UTF8.GetString(signedMessage));
+            Console.WriteLine();
+            Console.WriteLine("Encrypted message: " + Encoding.UTF8.GetString(encryptedMessage));
             Console.WriteLine();
             Console.WriteLine("Signature validity: " + isValidSignature);
 
-            return signedMessage;
+            return encryptedMessage;
         }
 
         static byte[] Encrypt(byte[] data, X509Certificate2 recipientCertificate)
@@ -134,8 +138,8 @@ namespace AS2
             //SubjectPublicKeyInfo subInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(rsa);
             //AsymmetricKeyParameter testpublicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(subInfo);
 
-            var privateCertBouncy = new X509CertificateParser().ReadCertificate(recipientCertificate.GetRawCertData());
-            AsymmetricKeyParameter pubKey = privateCertBouncy.GetPublicKey();
+            var certificate = new X509CertificateParser().ReadCertificate(recipientCertificate.GetRawCertData());
+            AsymmetricKeyParameter pubKey = certificate.GetPublicKey();
 
 
             ///
@@ -155,11 +159,31 @@ namespace AS2
             //param.Exponent = key.Exponent.ToByteArrayUnsigned();
             //param.Modulus = key.Modulus.ToByteArrayUnsigned();
 
-            IBufferedCipher cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
             //IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
 
+            /////////////IBufferedCipher cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
+            //////////cipher.Init(true, pubKey);
+            //////////return cipher.DoFinal(data);
+
+            //IAsymmetricBlockCipher cipher = new OaepEncoding(new RsaEngine());
+            //cipher.Init(true, pubKey);
+            //return cipher.ProcessBlock(data, 0, data.Length);
+
+            IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
             cipher.Init(true, pubKey);
-            return cipher.DoFinal(data);
+
+            int blockSize = cipher.GetInputBlockSize();
+            int outputSize = cipher.GetOutputBlockSize();
+
+            List<byte> encryptedData = new List<byte>();
+            for (int i = 0; i < data.Length; i += blockSize)
+            {
+                int length = Math.Min(blockSize, data.Length - i);
+                byte[] encryptedBlock = cipher.ProcessBlock(data, i, length);
+                encryptedData.AddRange(encryptedBlock);
+            }
+
+            return encryptedData.ToArray();
         }
 
         private static AsymmetricKeyParameter ToAsymmetricKeyParameter(X509Certificate2 certificate)
