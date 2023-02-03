@@ -102,23 +102,23 @@ namespace AS2
             byte[] encryptedMessage = Encrypt(Encoding.UTF8.GetBytes(message), recipientCert);
 
             // Sign the encrypted message
-            byte[] signedMessage = Sign(encryptedMessage, senderPrivateKey);
+            byte[] signature = Sign(encryptedMessage, senderPrivateKey);
 
             // Verify the signature
             var publicKey = new X509CertificateParser().ReadCertificate(recipientCert.GetRawCertData()).GetPublicKey();
-            bool isValidSignature = VerifySignature(encryptedMessage, publicKey);
+            bool isValidSignature = VerifySignature(Encoding.UTF8.GetBytes(message), signature, publicKey);
 
             //var decrypted = Decrypt(encryptedMessage, );
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
-            Console.WriteLine("Signed message: " + Encoding.UTF8.GetString(signedMessage));
+            Console.WriteLine("Signed message: " + Encoding.UTF8.GetString(signature));
             Console.WriteLine();
             Console.WriteLine("Encrypted message: " + Encoding.UTF8.GetString(encryptedMessage));
             Console.WriteLine();
             Console.WriteLine("Signature validity: " + isValidSignature);
 
-            return signedMessage;
+            return signature;
         }
 
         public static byte[] Encrypt(byte[] data, X509Certificate2 recipientCertificate)
@@ -164,7 +164,7 @@ namespace AS2
             return signer.GenerateSignature();
         }
 
-        public static bool VerifySignature(byte[] signedData, AsymmetricKeyParameter recipientPublicKey)
+        public static bool VerifySignature(byte[] message, byte[] signature, AsymmetricKeyParameter recipientPublicKey)
         {
             //X509Certificate2 recipientCertificate = LoadCertificate(recipientCertificatePath);
             //AsymmetricKeyParameter publicKey = LoadPublicKey(recipientPublicKey);
@@ -176,8 +176,8 @@ namespace AS2
 
 
             signer.Init(false, recipientPublicKey);
-            signer.BlockUpdate(signedData, 0, signedData.Length);
-            return signer.VerifySignature(signedData);
+            signer.BlockUpdate(message, 0, message.Length);
+            return signer.VerifySignature(signature);
 
             //signer.BlockUpdate(signedData, 0, signedData.Length - 128);
             //return signer.VerifySignature(signedData, signedData.Length - 128, 128);
