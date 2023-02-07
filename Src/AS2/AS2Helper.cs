@@ -1,4 +1,5 @@
-﻿using Org.BouncyCastle.Asn1.Ocsp;
+﻿using Org.BouncyCastle.Asn1.Cms;
+using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Asn1.X9;
@@ -11,7 +12,9 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
+using System.IO;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -130,15 +133,18 @@ namespace AS2
             cipher.Init(true, pubKey);
             return cipher.DoFinal(data);
 
-            //IAsymmetricBlockCipher cipher = new OaepEncoding(new RsaEngine());
+            //var cipher = new Pkcs1Encoding(new RsaEngine());
             //cipher.Init(true, pubKey);
             //return cipher.ProcessBlock(data, 0, data.Length);
 
-            //IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
+            //var cipher = new RsaEngine();
             //cipher.Init(true, pubKey);
-            //int blockSize = cipher.GetInputBlockSize();
-            //int outputSize = cipher.GetOutputBlockSize();
-            //List<byte> encryptedData = new List<byte>();
+            //return cipher.ProcessBlock(data, 0, data.Length);
+
+            //var cipher = new Pkcs1Encoding(new RsaEngine());
+            //cipher.Init(true, pubKey);
+            //var blockSize = cipher.GetInputBlockSize();
+            //var encryptedData = new List<byte>();
             //for (int i = 0; i < data.Length; i += blockSize)
             //{
             //    int length = Math.Min(blockSize, data.Length - i);
@@ -204,13 +210,29 @@ namespace AS2
             cipher.Init(false, privateKey);
             return cipher.DoFinal(encryptedMessage);
 
+            //var engine = new RsaEngine();
+            //engine.Init(false, privateKey);
+            //var r = engine.ProcessBlock(encryptedMessage, 0, encryptedMessage.Length);
+            //return r;
+
             //// Create the decrypter
             //CmsEnvelopedDataParser decrypter = new CmsEnvelopedDataParser(encryptedMessage);
             //RecipientInformationStore recipients = decrypter.GetRecipientInfos();
             //RecipientInformation recipient = recipients.GetFirstRecipient();
             //byte[] decryptedContent = recipient.GetContent(privateKey);
-
             //return decryptedContent;
+
+            //var cipher = new Pkcs1Encoding(new RsaEngine());
+            //cipher.Init(false, privateKey);
+            //var blockSize = cipher.GetOutputBlockSize();
+            //var decryptedData = new List<byte>();
+            //for (int i = 0; i < encryptedMessage.Length; i += blockSize)
+            //{
+            //    int length = Math.Min(blockSize, encryptedMessage.Length - i);
+            //    byte[] decryptedBlock = cipher.ProcessBlock(encryptedMessage, i, length);
+            //    decryptedData.AddRange(decryptedBlock);
+            //}
+            //return decryptedData.ToArray();
         }
 
         //static byte[] VerifySignature(byte[] decryptedContent)
@@ -229,37 +251,48 @@ namespace AS2
         //        // Signature is invalid
         //    }
         //}
-    }
 
-    public static class AS2HelperV3
-    {
-        //public static void EncryptMessage(string message, X509Certificate recipientCertificate,
-        //AsymmetricKeyParameter recipientPrivateKey, X509Certificate senderCertificate,
-        //AsymmetricKeyParameter senderPrivateKey, out byte[] encryptedMessage, out byte[] signature)
-        //{
-        //    // Encrypt message
-        //    IBufferedCipher cipher = CipherUtilities.GetCipher("DES/CBC/PKCS5Padding");
-        //    KeyGenerationParameters keyGenerationParameters = new KeyGenerationParameters(new SecureRandom(), 128);
-        //    KeyParameter key = (KeyParameter)new Pkcs5S2KeyWrapper(keyGenerationParameters).GenerateDerivedMacParameters(64);
-        //    cipher.Init(true, new ParametersWithIV(key, key.GetKey()));
-        //    encryptedMessage = cipher.DoFinal(Encoding.UTF8.GetBytes(message));
+        public static string PackMessageToBeSend(byte[] message, byte[] signedMessage, string fileName, string fileExtension, string boundary)
+        {
+            var boundaryWithDash = boundary;
 
-        //    // Sign message
-        //    ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
-        //    signer.Init(true, senderPrivateKey);
-        //    signer.BlockUpdate(encryptedMessage, 0, encryptedMessage.Length);
-        //    signature = signer.GenerateSignature();
+            if (!boundaryWithDash.StartsWith("--"))
+            {
+                boundaryWithDash = "--" + boundary;
+            }
 
-        //    // Create AS2 message
-        //    X509Certificate[] chain = new X509Certificate[] { senderCertificate };
-        //    X509CertificateStructure[] certStructs = Array.ConvertAll(chain, X509CertificateStructure.GetInstance);
-        //    As2SignedDataGenerator gen = new As2SignedDataGenerator();
-        //    gen.AddSignerInfoGenerator(new As2SignerInfoGenerator(senderPrivateKey, senderCertificate, "sha256").SetDirectSignature(true));
-        //    gen.AddCertificates(new X509Store(certStructs));
-        //    gen.AddSignature();
-        //    ApplicationPkcs7Mime pkcs7 = gen.Generate(new CmsProcessableByteArray(encryptedMessage), CmsSignedData.DontAddSignatureTimeStampToken);
+            var m = new StringBuilder();
 
-        //    // Send AS2 message        ...
-        //}
+            //m.Append(@"To: someone@somewhere.com
+            //        From: another@somewhereelse.com
+            //        Subject: Welcome to MIME
+            //        Message-ID: <7649a04d-1466-3493-e8a7-7c5084d12285@adroitlogic.com>
+            //        Date: Sun, 15 Aug 2021 23:00:30 +0530
+            //        MIME-Version: 1.0");
+
+            m.AppendLine($"Content-Type: multipart/signed; protocol=\"application/pkcs7-signature\"; micalg=\"sha-256\"; boundary=\"{boundary}\""); //multipart/report; report-type=\"disposition-notification\";
+            m.AppendLine($"Subject: Transfer EDI file {fileName}.{fileExtension}");
+            m.AppendLine();
+
+            m.AppendLine(boundaryWithDash);
+            //m.Append($"Content-Disposition: attachment; filename=\"{fileName}.{fileExtension}\"");
+            //m.Append($"Content-Type: application/octet-stream; charset=\"ascii\"; name=\"{fileName}.{fileExtension}\"");
+            m.AppendLine("Content-Type: application/octet-stream");
+            m.AppendLine("Content-Transfer-Encoding: base64"); // or "binary"?
+            m.AppendLine();
+            m.AppendLine(Convert.ToBase64String(message));
+
+            m.AppendLine(boundaryWithDash);
+            m.AppendLine("Content-Type: application/pkcs7-signature; name=smime.p7s; smime-type=signed-data");
+            m.AppendLine("Content-Transfer-Encoding: base64"); // or "binary"?
+            m.AppendLine("Content-Disposition: attachment; filename=\"smime.p7s\"");
+            m.AppendLine("Content-Description: S/MIME Cryptographic Signature");
+            m.AppendLine();
+            m.AppendLine(Convert.ToBase64String(signedMessage));
+
+            m.Append(boundaryWithDash);
+
+            return m.ToString();
+        }
     }
 }
