@@ -1,13 +1,6 @@
-﻿using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
+﻿using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using System;
-using System.Net;
-using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -32,7 +25,54 @@ namespace AS2
 
         static void SenderFlow()
         {
-            byte[] message = Encoding.UTF8.GetBytes("This is the EDI message.");
+            //byte[] message = Encoding.UTF8.GetBytes("This is the EDI message.");
+            var edi = @"ISA*00*          *00*          *01*027948264      *02*SCAC           *220607*1416*U*00401*000048322*0*P*>~
+GS*SM*027948264*SCAC*20220607*1416*204012314*X*004010~
+ST*204*34341~
+B2**SCAC**NB26199722**CC~
+B2A*00*LT~
+L11*2186200*IA~
+L11*NB26199722*MB~
+L11*0*CN~
+L11*218.1*BAS~
+L11*210*FFR~
+L11*287.75*FUE~
+G62*64*20220630*1*115913*PT~
+MS3*SCAC*S~
+AT5*DM*H1*PREFORM~
+AT5***TRANSFER_RM~
+PLD*0~
+NTE**By accepting this tender carrier is agreeing to the terms and conditions found a~
+NTE**https?//otmprod.niagarawater.com/PDF/204TermsDisclaimer.pdf~
+NTE**NBL.SCAC_TRANSFER,STK,ONT_SHIPPING_REGION,21,106,1~
+N7**0*********CN****0000~
+N7A*NP~
+S5*1*CL*47972.53*L***0*E~
+L11*0*BM~
+L11*31622443*DJ~
+L11*1669889*PO~
+L11*14095743*SO~
+G62*38*20220613*K*203000*LT~
+N1*SF*STOCKTON*93*148~
+N3*1025 RUNWAY DRIVE~
+N4*STOCKTON*CA*95206*USA~
+OID*31622443*1669889*14095743*CA*2560*L*47972.53*E*0~
+S5*2*CU*47972.53*L***0*E~
+L11*0*BM~
+L11*31622443*DJ~
+L11*1669889*PO~
+L11*14095743*SO~
+G62*54*20220614*L*115500*LT~
+N1*ST*PHILLY ONTARIO*93*145~
+N3*2560 E PHILADELPHIA STREET~
+N4*ONTARIO*CA*91761*USA~
+OID*31622443*1669889*14095743*CA*2560*L*47972.53*E*0~
+L3*47972.53*G~
+SE*41*34341~
+GE*1*204012314~
+IEA*1*000048322~";
+
+            var message = Encoding.UTF8.GetBytes(edi);
 
 
             // Load the S/MIME certificate
@@ -81,18 +121,18 @@ namespace AS2
 
             Console.WriteLine(body);
 
-            var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
+            //var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
 
-            var encryptedBody = AS2HelperV2.Encrypt(Encoding.UTF8.GetBytes(body), publicNiagaraCert);
+            //var encryptedBody = AS2HelperV2.Encrypt(Encoding.UTF8.GetBytes(body), publicNiagaraCert);
 
-            Console.WriteLine(Convert.ToBase64String(encryptedBody));
+            //Console.WriteLine(Convert.ToBase64String(encryptedBody));
 
-            // test decrypt
-            var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
-            var decrypted = AS2HelperV2.Decrypt(encryptedBody, privateNiagaraKey.Private);
+            //// test decrypt
+            //var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
+            //var decrypted = AS2HelperV2.Decrypt(encryptedBody, privateNiagaraKey.Private);
 
-            Console.WriteLine("-----------------------------------------------------");
-            Console.WriteLine(Convert.ToBase64String(decrypted));
+            //Console.WriteLine("-----------------------------------------------------");
+            //Console.WriteLine(Convert.ToBase64String(decrypted));
 
             //MemoryStream memoryStream = new MemoryStream();
             //StreamWriter streamWriter = new StreamWriter(memoryStream);
