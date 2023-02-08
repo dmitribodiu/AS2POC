@@ -12,7 +12,7 @@ namespace AS2
 
         static void Main(string[] args)
         {
-            var certificate = GenerateCertificate();
+            //var certificate = GenerateCertificate();
 
             //EncryptDecryptFlow();
 
