@@ -12,7 +12,7 @@ namespace AS2
 
         static void Main(string[] args)
         {
-            //var certificate = GenerateCertificate();
+            var certificate = GenerateCertificate();
 
             //EncryptDecryptFlow();
 
@@ -224,10 +224,12 @@ IEA*1*000048322~";
 
         static X509Certificate2 GenerateCertificate()
         {
-            AsymmetricCipherKeyPair CertificateKey;
-            var X509RootCert = Cryptography.CreateCertificate("C=US, O=Alvys", "CN=ALVYS", 5, out CertificateKey);
+            var fileName = $"AL363-{DateTimeOffset.UtcNow.ToString("yyyyMMdd")}";
+            var attributes = "C=US, O=Alvys Logistics, CN=AL363";
 
-            var fileName = "Alvys";
+            AsymmetricCipherKeyPair CertificateKey;
+            var X509RootCert = Cryptography.CreateCertificate(attributes, attributes, 12, out CertificateKey);
+
 
             //now let us write the certificates files to the folder 
             File.WriteAllBytes($"{CertificateFolderPath}\\{fileName}.cer", X509RootCert.RawData);
