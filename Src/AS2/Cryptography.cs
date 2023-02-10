@@ -11,14 +11,14 @@ namespace AS2
 {
     class Cryptography
     {
-        public static X509Certificate2 CreateCertificate(string subjectName, string issuer, int ValidMonths, out AsymmetricCipherKeyPair KeyPair, int keyStrength = 2048)
+        public static (X509Certificate2 Certificate, AsymmetricCipherKeyPair KeyPair) GenerateCertificate(string subjectName, string issuer, int ValidMonths, int keyStrength = 2048)
         {
             // Generating Random Numbers
-            CryptoApiRandomGenerator randomGenerator = new();
+            var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
 
             // The Certificate Generator
-            X509V3CertificateGenerator certificateGenerator = new();
+            var certificateGenerator = new X509V3CertificateGenerator();
 
             // Serial Number
             var serialNumber = BigIntegers.CreateRandomInRange(Org.BouncyCastle.Math.BigInteger.One, Org.BouncyCastle.Math.BigInteger.ValueOf(Int64.MaxValue), random);
@@ -40,25 +40,21 @@ namespace AS2
             certificateGenerator.AddExtension(X509Extensions.KeyUsage.Id, true, new KeyUsage(KeyUsage.KeyEncipherment));
 
             // Subject Public Key
-            AsymmetricCipherKeyPair subjectKeyPair;
             var keyGenerationParameters = new KeyGenerationParameters(random, keyStrength);
             var keyPairGenerator = new RsaKeyPairGenerator();
             keyPairGenerator.Init(keyGenerationParameters);
-            subjectKeyPair = keyPairGenerator.GenerateKeyPair();
+            var subjectKeyPair = keyPairGenerator.GenerateKeyPair();
 
             certificateGenerator.SetPublicKey(subjectKeyPair.Public);
 
             // Generating the Certificate
-            var issuerKeyPair = subjectKeyPair;
-            KeyPair = subjectKeyPair;
-
             // Selfsign certificate
             certificateGenerator.SetSignatureAlgorithm("SHA256WithRSA");
-            var certificate = certificateGenerator.Generate(issuerKeyPair.Private, random);
+            var certificate = certificateGenerator.Generate(subjectKeyPair.Private, random);
             certificate.CheckValidity();
             var x509 = new System.Security.Cryptography.X509Certificates.X509Certificate2(certificate.GetEncoded());
 
-            return x509;
+            return (x509, subjectKeyPair);
         }
 
     }

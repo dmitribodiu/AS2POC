@@ -295,4 +295,83 @@ namespace AS2
             return m.ToString();
         }
     }
+
+    public static class AS2HelperV3
+    {
+        public static byte[] Sign(byte[] message, AsymmetricKeyParameter privateKey)
+        {
+            var signer = SignerUtilities.GetSigner(PkcsObjectIdentifiers.Sha256WithRsaEncryption.Id);
+            signer.Init(true, privateKey);
+            signer.BlockUpdate(message, 0, message.Length);
+            return signer.GenerateSignature();
+        }
+
+        public static bool VerifySignature(byte[] message, byte[] signedMessage, AsymmetricKeyParameter publicKey)
+        {
+            var signer = SignerUtilities.GetSigner(PkcsObjectIdentifiers.Sha256WithRsaEncryption.Id);
+            signer.Init(false, publicKey);
+            signer.BlockUpdate(message, 0, message.Length);
+            return signer.VerifySignature(signedMessage);
+        }
+
+        public static byte[] Encrypt(byte[] message, X509Certificate2 recipientCertificate)
+        {
+            var certificate = new X509CertificateParser().ReadCertificate(recipientCertificate.GetRawCertData());
+            var pubKey = certificate.GetPublicKey();
+
+            var cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
+            cipher.Init(true, pubKey);
+            return cipher.DoFinal(message);
+        }
+
+        public static byte[] Decrypt(byte[] encryptedMessage, AsymmetricKeyParameter privateKey)
+        {
+            var cipher = CipherUtilities.GetCipher("RSA/ECB/PKCS1Padding");
+            cipher.Init(false, privateKey);
+            return cipher.DoFinal(encryptedMessage);
+        }
+
+        public static string PackMessageToBeSend(byte[] message, byte[] signedMessage, string fileName, string fileExtension, string boundary)
+        {
+            var boundaryWithDash = boundary;
+
+            if (!boundaryWithDash.StartsWith("--"))
+            {
+                boundaryWithDash = "--" + boundary;
+            }
+
+            var m = new StringBuilder();
+
+            //m.Append(@"To: someone@somewhere.com
+            //        From: another@somewhereelse.com
+            //        Subject: Welcome to MIME
+            //        Message-ID: <7649a04d-1466-3493-e8a7-7c5084d12285@adroitlogic.com>
+            //        Date: Sun, 15 Aug 2021 23:00:30 +0530
+            //        MIME-Version: 1.0");
+
+            m.AppendLine($"Content-Type: multipart/signed; protocol=\"application/pkcs7-signature\"; micalg=\"sha-256\"; boundary=\"{boundary}\""); //multipart/report; report-type=\"disposition-notification\";
+            m.AppendLine($"Subject: Transfer EDI file {fileName}.{fileExtension}");
+            m.AppendLine();
+
+            m.AppendLine(boundaryWithDash);
+            //m.Append($"Content-Disposition: attachment; filename=\"{fileName}.{fileExtension}\"");
+            //m.Append($"Content-Type: application/octet-stream; charset=\"ascii\"; name=\"{fileName}.{fileExtension}\"");
+            m.AppendLine("Content-Type: application/octet-stream");
+            m.AppendLine("Content-Transfer-Encoding: base64"); // or "binary"?
+            m.AppendLine();
+            m.AppendLine(Convert.ToBase64String(message));
+
+            m.AppendLine(boundaryWithDash);
+            m.AppendLine("Content-Type: application/pkcs7-signature; name=smime.p7s; smime-type=signed-data");
+            m.AppendLine("Content-Transfer-Encoding: base64"); // or "binary"?
+            m.AppendLine("Content-Disposition: attachment; filename=\"smime.p7s\"");
+            m.AppendLine("Content-Description: S/MIME Cryptographic Signature");
+            m.AppendLine();
+            m.AppendLine(Convert.ToBase64String(signedMessage));
+
+            m.Append(boundaryWithDash);
+
+            return m.ToString();
+        }
+    }
 }

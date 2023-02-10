@@ -88,7 +88,7 @@ IEA*1*000048322~";
 
             //var asd = envelopedCms.Encode();
 
-            //var encrypted = AS2HelperV2.Encrypt(message, cert);
+            //var encrypted = AS2HelperV3.Encrypt(message, cert);
 
             // Create the HTTP request
             //HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://example.com/as2");
@@ -104,12 +104,12 @@ IEA*1*000048322~";
 
             // sign message
             var alvysPrivateKey = LoadPrivateKey($"{CertificateFolderPath}\\AH100-Alvys-private.pem");
-            var signature = AS2HelperV2.Sign(message, alvysPrivateKey);
+            var signature = AS2HelperV3.Sign(message, alvysPrivateKey.Private);
 
             // verify signature
             var alvysPublicCert = new X509Certificate2($"{CertificateFolderPath}\\AH100-Alvys.cer");
             var alvysPublicKey = new X509CertificateParser().ReadCertificate(alvysPublicCert.GetRawCertData()).GetPublicKey();
-            var validSignature = AS2HelperV2.VerifySignature(message, signature, alvysPublicKey);
+            var validSignature = AS2HelperV3.VerifySignature(message, signature, alvysPublicKey);
 
             if (validSignature == false)
             {
@@ -117,19 +117,19 @@ IEA*1*000048322~";
             }
 
             // Create the HTTP request body
-            var body = AS2HelperV2.PackMessageToBeSend(message, signature, "fileName", "txt", $"fileName_{DateTimeOffset.UtcNow}");
+            var body = AS2HelperV3.PackMessageToBeSend(message, signature, "fileName", "txt", $"fileName_{DateTimeOffset.UtcNow}");
 
             Console.WriteLine(body);
 
             //var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
 
-            //var encryptedBody = AS2HelperV2.Encrypt(Encoding.UTF8.GetBytes(body), publicNiagaraCert);
+            //var encryptedBody = AS2HelperV3.Encrypt(Encoding.UTF8.GetBytes(body), publicNiagaraCert);
 
             //Console.WriteLine(Convert.ToBase64String(encryptedBody));
 
             //// test decrypt
             //var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
-            //var decrypted = AS2HelperV2.Decrypt(encryptedBody, privateNiagaraKey.Private);
+            //var decrypted = AS2HelperV3.Decrypt(encryptedBody, privateNiagaraKey.Private);
 
             //Console.WriteLine("-----------------------------------------------------");
             //Console.WriteLine(Convert.ToBase64String(decrypted));
@@ -161,10 +161,10 @@ IEA*1*000048322~";
             var message = "Test text 123";
 
             var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
-            var encrypted = AS2HelperV2.Encrypt(Encoding.UTF8.GetBytes(message), publicNiagaraCert);
+            var encrypted = AS2HelperV3.Encrypt(Encoding.UTF8.GetBytes(message), publicNiagaraCert);
 
             var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
-            var decrypted = AS2HelperV2.Decrypt(encrypted, privateNiagaraKey.Private);
+            var decrypted = AS2HelperV3.Decrypt(encrypted, privateNiagaraKey.Private);
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
@@ -178,11 +178,11 @@ IEA*1*000048322~";
             var message = "Test text 123";
 
             var privateKey = LoadPrivateKey($"{CertificateFolderPath}\\AH100-Alvys-private.pem");
-            var signature = AS2HelperV2.Sign(Encoding.UTF8.GetBytes(message), privateKey);
+            var signature = AS2HelperV3.Sign(Encoding.UTF8.GetBytes(message), privateKey.Private);
 
             var publicCert = new X509Certificate2($"{CertificateFolderPath}\\AH100-Alvys.cer");
             var publicKey = new X509CertificateParser().ReadCertificate(publicCert.GetRawCertData()).GetPublicKey();
-            var verifySigned = AS2HelperV2.VerifySignature(Encoding.UTF8.GetBytes(message), signature, publicKey);
+            var verifySigned = AS2HelperV3.VerifySignature(Encoding.UTF8.GetBytes(message), signature, publicKey);
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
@@ -197,10 +197,10 @@ IEA*1*000048322~";
             var message = "Test text 123";
 
             var alvysPrivateKey = LoadPrivateKey($"{CertificateFolderPath}\\AH100-Alvys-private.pem");
-            var signature = AS2HelperV2.Sign(Encoding.UTF8.GetBytes(message), alvysPrivateKey);
+            var signature = AS2HelperV3.Sign(Encoding.UTF8.GetBytes(message), alvysPrivateKey.Private);
 
             var publicNiagaraCert = new X509Certificate2($"{CertificateFolderPath}\\Niagara.cer");
-            var encrypted = AS2HelperV2.Encrypt(Encoding.UTF8.GetBytes(message), publicNiagaraCert);
+            var encrypted = AS2HelperV3.Encrypt(Encoding.UTF8.GetBytes(message), publicNiagaraCert);
 
             Console.WriteLine("Original message: " + message);
             Console.WriteLine();
@@ -211,11 +211,11 @@ IEA*1*000048322~";
 
             // Niagara part
             var privateNiagaraKey = LoadPrivateKey($"{CertificateFolderPath}\\Niagara-private.pem");
-            var decrypted = AS2HelperV2.Decrypt(encrypted, privateNiagaraKey.Private);
+            var decrypted = AS2HelperV3.Decrypt(encrypted, privateNiagaraKey.Private);
 
             var alvysPublicCert = new X509Certificate2($"{CertificateFolderPath}\\AH100-Alvys.cer");
             var alvysPublicKey = new X509CertificateParser().ReadCertificate(alvysPublicCert.GetRawCertData()).GetPublicKey();
-            var verifySigned = AS2HelperV2.VerifySignature(decrypted, signature, alvysPublicKey);
+            var verifySigned = AS2HelperV3.VerifySignature(decrypted, signature, alvysPublicKey);
 
             Console.WriteLine("decrypted message: " + Encoding.UTF8.GetString(decrypted));
             Console.WriteLine();
@@ -224,15 +224,13 @@ IEA*1*000048322~";
 
         static X509Certificate2 GenerateCertificate()
         {
-            var fileName = $"AL363-{DateTimeOffset.UtcNow.ToString("yyyyMMdd")}";
+            var fileName = $"1AL363-{DateTimeOffset.UtcNow.ToString("yyyyMMdd")}";
             var attributes = "C=US, O=Alvys Logistics, CN=AL363";
 
-            AsymmetricCipherKeyPair CertificateKey;
-            var X509RootCert = Cryptography.CreateCertificate(attributes, attributes, 12, out CertificateKey);
-
+            var x509Certificate = Cryptography.GenerateCertificate(attributes, attributes, 6);
 
             //now let us write the certificates files to the folder 
-            File.WriteAllBytes($"{CertificateFolderPath}\\{fileName}.cer", X509RootCert.RawData);
+            File.WriteAllBytes($"{CertificateFolderPath}\\{fileName}.cer", x509Certificate.Certificate.RawData);
             //File.WriteAllBytes(folder + "\\" + "X509Cert.der", X509RootCert.RawData);
 
             string PublicPEMFile = $"{CertificateFolderPath}\\{fileName}-public.pem";
@@ -242,7 +240,7 @@ IEA*1*000048322~";
             using (TextWriter textWriter = new StreamWriter(PublicPEMFile, false))
             {
                 PemWriter pemWriter = new PemWriter(textWriter);
-                pemWriter.WriteObject(CertificateKey.Public);
+                pemWriter.WriteObject(x509Certificate.KeyPair.Public);
                 pemWriter.Writer.Flush();
             }
 
@@ -250,11 +248,11 @@ IEA*1*000048322~";
             using (TextWriter textWriter = new StreamWriter(PrivatePEMFile, false))
             {
                 PemWriter pemWriter = new PemWriter(textWriter);
-                pemWriter.WriteObject(CertificateKey.Private);
+                pemWriter.WriteObject(x509Certificate.KeyPair.Private);
                 pemWriter.Writer.Flush();
             }
 
-            return X509RootCert;
+            return x509Certificate.Certificate;
         }
 
         /// <summary>
